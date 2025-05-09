@@ -825,8 +825,8 @@ int main() {
         // Test grade book
         try {
             GradeBook gradebook("CS101", "P123");
-            gradebook.addGrade(prof1, "S123", 88.0); // John Doe's grade
-            gradebook.addGrade(prof1, "S124", 92.0); // Jane Smith's grade
+            gradebook.addGrade(prof1, "S123", 88.0); 
+            gradebook.addGrade(prof1, "S124", 92.0); 
             gradebook.displayGrades();
             gradebook.finalizeGrades();
         } catch (const UniversitySystemException& e) {
