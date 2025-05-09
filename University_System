@@ -6,7 +6,7 @@
 #include<iomanip>
 #include<sstream>
 #include<fstream>
-#include "Assignment_2_3_4.cpp" // Include the existing code
+#include "Assignment_2_3_4" // Include the existing code
 
 using namespace std;
 
