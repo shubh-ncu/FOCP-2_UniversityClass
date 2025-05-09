@@ -1,0 +1,852 @@
+#include<iostream>
+#include<vector>
+#include<string>
+#include<ctime>
+#include<exception>
+#include<iomanip>
+#include<sstream>
+#include<map>
+#include<fstream>
+using namespace std;
+
+string getTodayDate() {
+    time_t now = time(0);
+    tm *ltm = localtime(&now);
+    if (!ltm) {
+        throw runtime_error("Failed to get local time");
+    }
+    stringstream ss;
+    ss << 1900 + ltm->tm_year << "-";
+    ss << setfill('0') << setw(2) << 1 + ltm->tm_mon << "-";
+    ss << setfill('0') << setw(2) << ltm->tm_mday;
+    return ss.str();
+}
+class UniversitySystemException:public exception
+{
+    protected:
+    string message;
+    public:
+    UniversitySystemException(string msg):message(msg){}
+    virtual const char* what() const noexcept override
+    {
+        return message.c_str();
+    }
+
+};
+class GradeException:public UniversitySystemException
+{
+    public:
+    GradeException(string msg):UniversitySystemException("Grade Error: "+msg){}
+};
+class EnrollmentException:public UniversitySystemException
+{
+    public:
+    EnrollmentException(string msg):UniversitySystemException("Enrollment Error: "+msg){}
+};
+class PaymentException:public UniversitySystemException
+{
+    public:
+    PaymentException(string msg):UniversitySystemException("Payment Error: "+msg){}
+};
+//PART A
+class Person
+{
+    private:
+    string name;
+    int age;
+    string ID;
+    string contactInfo;
+
+    public:
+    Person(string n, int a,string id, string c):name(n),age(a),ID(id),contactInfo(c)
+    {
+        if (n.empty()) throw UniversitySystemException("Name cannot be empty");
+        if (a <= 0 || a > 120) throw UniversitySystemException("Invalid age");
+        if (id.empty() || id.length() < 5) throw UniversitySystemException("Invalid ID");
+        setContactInfo(c);
+    }
+    virtual ~Person() {}
+    //string getID() const {return ID;}
+    void setContactInfo(string c)
+    {
+        if (c.length() != 10)
+            throw UniversitySystemException("Contact number must be 10 digits");
+        for (char ch : c)
+        {
+            if (!isdigit(ch))
+                throw UniversitySystemException("Contact number must be digits");
+        }
+        contactInfo = c; 
+    }
+
+    // Getter and Setter methods
+    string getName() {return name;}
+    int getAge() {return age;}
+    string getID() {return ID;}
+    string getContactInfo() {return contactInfo;}
+    void setName(string n)
+    {
+        if(n.length()==0)
+        {
+            cout<<"Name cannot be empty"<<endl;
+            return;
+        }
+        name=n;
+    }
+    void setAge(int a)
+    {
+        if(a<=0||a>=120)
+        {
+            cout<<"Age must be positive and reasonable"<<endl;
+            return;
+        }
+        age=a;
+    }
+    void setID(string id) {ID=id;};
+    virtual void displayInfo()
+    {
+        cout<<"Name: "<<name<<endl;
+        cout<<"Age: "<<age<<endl;
+        cout<<"ID: "<<ID<<endl;
+        cout<<"Contact Info: "<<contactInfo<<endl;
+    }
+    virtual float calculatePayment()
+    {
+        return 0.0;
+    }
+};
+
+
+class Student:public Person
+{
+    private:
+    string enrollmentDate;
+    string program;
+    float GPA;
+
+    public:
+    Student(string n, int a,string id, string c, string e, string p, float g) : Person(n, a, id, c),enrollmentDate(e),program(p),GPA(g){}
+    ~Student() {}
+
+    void displayInfo() override
+    {
+        Person::displayInfo();
+        cout<<"Enrollment Date: "<<enrollmentDate<<endl;
+        cout<<"Program: "<<program<<endl;
+        cout<<"GPA: "<<GPA<<endl;
+    }
+
+       float calculatePayment() override
+    {
+        float tutionFee = 25000.0;
+        float scholarship = GPA > 3.5 ? 0.2 * tutionFee : 0.0;
+        return tutionFee - scholarship;
+    }
+
+    // Getter and Setter methods
+    string getEnrollmentDate() { return enrollmentDate; }
+    string getProgram() { return program; }
+    float getGPA() { return GPA; }
+    void setEnrollmentDate(string e) { enrollmentDate = e; }
+    void setProgram(string p) { program = p; }
+    void setGPA(float g) 
+    { 
+        if(g<0.0 || g>4.0)
+        {
+            cout<<"GPA must be between 0.0 and 4.0"<<endl;
+            return;
+        }
+        GPA = g; 
+    }
+};
+
+class Professor:public Person
+{
+    private:
+    string department;
+    string specialization;
+    string hireDate;
+
+    public:
+    Professor(string n, int a,string id, string c, string d, string s, string h) : Person(n, a, id, c),department(d),specialization(s),hireDate(h){}
+    ~Professor() {}
+    void displayInfo() override
+    {
+        Person::displayInfo();
+        cout<<"Department: "<<department<<endl;
+        cout<<"Specialization: "<<specialization<<endl;
+        cout<<"Hire Date: "<<hireDate<<endl;
+    }
+   float calculatePayment() override
+    {
+        float baseSalary=100000.0;
+        float bonus=0.0;
+        if(specialization=="AI")
+        {
+            bonus=0.2*baseSalary;
+        }
+        else if(specialization=="ML")
+        {
+            bonus=0.15*baseSalary;
+        }
+        else if(specialization=="DS")
+        {
+            bonus=0.1*baseSalary;
+        }
+        else
+        {
+            bonus=0.05*baseSalary;
+        }
+         // Calculate payment based on base salary and bonus
+        return baseSalary + bonus;
+    }
+    // Getter and Setter methods
+    string getDepartment() { return department; }
+    string getSpecialization() { return specialization; }
+    string getHireDate() { return hireDate; }
+    void setDepartment(string d) { department = d; }
+    void setSpecialization(string s) { specialization = s; }
+    void setHireDate(string h) { hireDate = h; }
+};
+
+//----------CLASSROOM----------
+class Classroom
+{
+    private:
+    string room_number;
+    int capacity;
+    string building;
+
+    public:
+    Classroom(string rNo,int cap,string b):room_number(rNo),capacity(cap),building(b){}
+    string getRoomnumber() const {return room_number;}
+    int getCapacity() const {return capacity;}
+    string getBuilding() const {return building;}
+
+    void displayInfo() const
+    {
+        cout<<"Room Number: "<<room_number<<endl;
+        cout<<"Capacity: "<<capacity<<endl;
+        cout<<"Building: "<<building<<endl;
+    }
+};
+
+
+class Course
+{
+    private:
+    string code,title,description,enrollmentDeadline;
+    int credits,capacity;
+    Professor *instructor;
+    Classroom *classroom;
+    vector<string> prerequisites;
+    public:
+    Course(string c, string t, int cr, string d, Professor *p,Classroom *room, int cap, string deadline):code(c),title(t),credits(cr),description(d),instructor(p),classroom(room),capacity(cap),enrollmentDeadline(deadline){}
+    
+    ~Course() {}
+    void displayCourse()
+    {
+        cout<<"Course: "<<title<<"("<<code<<"), Credits: "<<credits<<", Capacity: "<<capacity<<", Deadline: "<<enrollmentDeadline<<endl;
+        cout<<"Instructor:\n "<<endl;
+        if(instructor)
+        {
+            instructor->displayInfo();
+        }
+        else
+        {
+            cout<<"No instructor assigned"<<endl;
+        }
+        if(classroom)
+        {
+            cout<<"Classroom:\n "<<endl;
+            classroom->displayInfo();
+        }
+        else
+        {
+            cout<<"No classroom assigned"<<endl;
+        }
+
+    }
+
+
+
+
+    
+    // Getter and Setter methods
+    Professor* getInstructor() const {return instructor;}
+    string getCode() const { return code; }
+    string getTitle() const{ return title; }
+    int getCapacity() const { return capacity; }
+    vector<string> getPrerequisites() const{ return prerequisites; }
+    string getDeadline() const { return enrollmentDeadline; }
+    int getCredits() { return credits; }
+    string getDescription() { return description; }
+    void setCode(string c) { code = c; }
+    void setTitle(string t) { title = t; }
+    void setPrerequisites(vector<string> prereqs) { prerequisites = prereqs; }
+    void setInstructor(Professor* prof) { instructor = prof; }
+    void setCredits(int cr) 
+    {
+        if(cr<=0)
+        {
+            cout<<"Credits must be positive"<<endl;
+            return;
+        }
+         credits = cr; 
+    }
+    void setDescription(string d) { description = d; }
+};
+class StudentWithCourses:public Student
+{
+    private:
+    vector<Course*>enrolledCourses;
+    public:
+    StudentWithCourses(string n, int a,string id, string c, string e, string p, float g) : Student(n, a, id, c,e,p,g){}
+    ~StudentWithCourses() {}
+
+    void enrollInCourse(Course*course)
+    {
+        enrolledCourses.push_back(course);
+    }
+    void listOfCourses()
+    {
+        cout<<"Enrolled Courses for "<<getName()<<endl;
+        for(auto c:enrolledCourses)
+        {
+            c->displayCourse();
+            cout<<"---------------\n";
+        }
+    }
+};
+class Department
+{
+    private:
+    string name;
+    string location;
+    float budget;
+    vector<Professor*> professors;
+
+    public:
+    Department(string n, string l, float b):name(n),location(l),budget(b){}
+    ~Department() {}
+
+    void addProfessor(Professor* prof)
+    {
+        professors.push_back(prof);
+    }
+    void list_of_Professors()
+    {
+        cout<<"Professors in "<<name<<" department:\n"<<endl;
+        for(auto prof:professors)
+        {
+            prof->displayInfo();
+            cout<<endl;
+        }
+    }
+    // Getter and Setter methods
+    string getName() { return name; }
+    string getLocation() { return location; }
+    float getBudget() { return budget; }
+    void setName(string n) { name = n; }
+    void setLocation(string l) { location = l; }
+    void setBudget(float b) { budget = b; }
+};
+
+class GradeBook
+{
+    string courseCode;
+    vector<string> studentIDs;
+    vector<float> grades;
+    map<string,bool>completedstatus;
+    string authorizedGraderID;
+
+    public:
+    GradeBook(string c,string graderID):courseCode(c),authorizedGraderID(graderID){}
+    ~GradeBook() {}
+
+    void authorizeGrader(string id) {authorizedGraderID=id;}
+    void markStudentCompleted(string id) {completedstatus[id]=true;}
+
+    void addGrade(Professor *professor,string studentid, float grade)//Add and update grades
+    {
+        if(professor->getID()!=authorizedGraderID)
+        {
+            throw EnrollmentException("Unauthorized access to gradebook");
+            return;
+        }
+        if(grade<0.0 || grade>100.0)
+        {
+            throw GradeException("Grade must be between 0.0 and 100.0 ");
+            return;
+        }
+        for(int i=0;i<studentIDs.size();i++)
+        {
+            if(studentIDs[i]==studentid)
+            {
+                grades[i]=grade;
+                return;
+            }
+        }
+        studentIDs.push_back(studentid);//adding new student
+        grades.push_back(grade);//adding new grade
+        completedstatus[studentid]=false;
+    }
+    
+
+    void finalizeGrades() {
+        for (const string& id : studentIDs) {
+            if (completedstatus.find(id) == completedstatus.end() || !completedstatus[id]) {
+                throw GradeException("Student " + id + " has not completed requirements");
+            }
+        }
+        cout << "Grades finalized successfully for course " << courseCode << endl;
+    }
+
+    float calulateAverageGrade()
+    {
+        if(grades.empty())
+        {
+            cout<<"No grades available"<<endl;
+            return 0.0;
+        }
+        float sum=0.0;
+        for(int i=0;i<grades.size();i++)
+        {
+            sum+=grades[i];
+        }
+        return sum/grades.size();
+    }
+    float getHighestGrade()
+    {
+        if(grades.empty())
+        {
+            cout<<"No grades available"<<endl;
+            return 0.0;
+        }
+        float highest=grades[0];
+        for(int i=1;i<grades.size();i++)
+        {
+            if(grades[i]>highest)
+            {
+                highest=grades[i];
+            }
+        }
+        return highest;
+    }
+    float getGrade(string id)//Get grade for a student
+    {
+        for(int i=0;i<studentIDs.size();i++)
+        {
+            if(studentIDs[i]==id)
+            {
+                return grades[i];
+            }
+        }
+        cout<<"Student ID not found"<<endl;
+        return -1;
+    }
+    vector<string> getFailingStudents(float passingGrade=40.0)
+    {
+        vector<string> failingStudents;
+        for(int i=0;i<grades.size();i++)
+        {
+            if(grades[i]<passingGrade)
+            {
+                failingStudents.push_back(studentIDs[i]);
+            }
+        }
+        return failingStudents;
+    }
+
+    void displayGrades()//Display all grades
+    {
+        cout<<"Grades for course "<<courseCode<<endl;
+        for(int i=0;i<studentIDs.size();i++)
+        {
+            cout<<"Student ID: "<<studentIDs[i]<<" Grade: "<<grades[i]<<endl;
+        }
+    }
+};
+
+class EnrollmentManager
+{
+    private:
+    vector<string> enrolledStudents;
+    vector<string> courseCodes;
+
+    public:
+    void enrollStudent(string studentID, string courseCode, Course& course, vector<string> completedCourses)
+    {//Check if student is already enrolled
+        for(int i=0;i<enrolledStudents.size();i++)
+        {
+            if(enrolledStudents[i]==studentID && courseCodes[i]==courseCode)
+            {
+                throw EnrollmentException("Student already enrolled in this course");
+            }
+        }
+    //check course capacity
+    int count=0;
+    for(int i=0;i<courseCodes.size();i++)
+    {
+        if(courseCodes[i]==courseCode)
+        {
+            count++;
+        }
+    }
+    if(count>=course.getCapacity())
+    {
+        throw EnrollmentException("Course is full");
+    }
+
+    //check prerequisites
+    for(auto prereq:course.getPrerequisites())
+    {
+        bool completed=false;
+        for(string completedCourse:completedCourses)
+        {
+            if(completedCourse==prereq)
+            {
+                completed=true;
+                break;
+            }
+        }
+        if(!completed)
+        {
+            throw EnrollmentException("Student has not completed prerequisites for this course");
+        }
+    } 
+    //check enrollment deadline
+    string today=getTodayDate();
+    {
+        if (today>course.getDeadline())
+        {
+            throw EnrollmentException("Enrollment deadline has passed");
+        }
+    }
+
+        enrolledStudents.push_back(studentID);
+        courseCodes.push_back(courseCode);
+    }
+    void dropStudent(string studentID, string courseCode)
+    {
+        for(int i=0;i<enrolledStudents.size();i++)
+        {
+            if(enrolledStudents[i]==studentID && courseCodes[i]==courseCode)
+            {
+                enrolledStudents.erase(enrolledStudents.begin()+i);
+                courseCodes.erase(courseCodes.begin()+i);
+                return;
+            }
+        }
+        cout<<"Student not found in this course"<<endl;
+    }
+    vector<string> getenrollmentCount(string courseCode)
+    {
+        vector<string> enrolled;
+        for(int i=0;i<enrolledStudents.size();i++)
+        {
+            if(courseCodes[i]==courseCode)
+            {
+                enrolled.push_back(enrolledStudents[i]);
+            }
+        }
+        return enrolled;
+    }
+    ~EnrollmentManager() {}
+};
+void testPerson(Person *p)
+{
+    cout<<"Testing Person class"<<endl;
+    p->displayInfo();
+    cout<<"Payment: Rs"<<p->calculatePayment()<<endl;
+    cout<<endl;
+}
+
+class UndergraduateStudent:public Student
+{
+    private:
+    string major;
+    string minor;
+    string expectedGraduationDate;
+
+    public:
+    UndergraduateStudent(string n, int a, string id, string c, string e, string p, float g, string mj, string mi, string grad_date) : Student(n, a, id, c, e, p, g),major(mj),minor(mi),expectedGraduationDate(grad_date){}
+
+    void displayInfo() override
+    {
+        Student::displayInfo();
+        cout<<"Major: "<<major<<endl;
+        cout<<"Minor: "<<minor<<endl;
+        cout<<"Expected Graduation Date: "<<expectedGraduationDate<<endl;
+    }
+};
+class GraduateStudent:public Student
+{
+    private:
+    string researchTopic;
+    Professor *advisor;
+    string advisorId;
+    string thesisTitle;
+
+    public:
+    GraduateStudent(string n, int a, string id, string c, string e, string p, float g, string topic,Professor *adv, string adv_id, string t_title) : Student(n, a, id, c, e, p, g),researchTopic(topic),advisor(adv),advisorId(adv_id),thesisTitle(t_title){}
+
+    void displayInfo() override
+    {
+        Student::displayInfo();
+        cout<<"Research Topic: "<<researchTopic<<endl;
+        cout<<"Advisor ID: "<<advisorId<<endl;
+        cout<<"Thesis Title: "<<thesisTitle<<endl;
+        if(advisor)
+        {
+            cout<<"Advisor Info: "<<endl;
+            advisor->displayInfo();
+        }
+        else
+        {
+            cout<<"No advisor assigned"<<endl;
+        }
+    }
+};
+
+class AssistantProfessor:public Professor
+{
+    private:
+    string tenure;
+
+    public:
+    AssistantProfessor(string n, int a, string id, string c, string d, string s, string h, string t) : Professor(n, a, id, c, d, s, h),tenure(t)
+    {
+        if(tenure.empty())
+        {
+            throw PaymentException("Tenure must be positive");
+        }
+    }
+    void displayInfo() override
+    {
+        Professor::displayInfo();
+        cout<<"Tenure: "<<tenure<<endl;
+    }
+    float calculatePayment() override
+    {
+        return 100000.0 + (static_cast<float>(stoi(tenure)) * 1500.0); // Convert tenure to integer
+    }
+};
+class AssociateProfessor:public Professor
+{
+    private:
+    string publications;
+
+    public:
+    AssociateProfessor(string n, int a, string id, string c, string d, string s, string h, string pub) : Professor(n, a, id, c, d, s, h),publications(pub)
+    {
+        if(publications.empty())
+        {
+            throw PaymentException("Number of publications must be positive");
+        }
+    }
+    void displayInfo() override
+    {
+        Professor::displayInfo();
+        cout<<"Publications: "<<publications<<endl;
+    }
+    float calculatePayment() override
+    {
+        return 120000.0 + (static_cast<float>(stoi(publications)) * 500.0);
+    }
+
+};
+class FullProfessor:public Professor
+{
+    private:
+    string researchGrants;
+
+    public:
+    FullProfessor(string n, int a, string id, string c, string d, string s, string h, string rg) : Professor(n, a, id, c, d, s, h),researchGrants(rg)
+    {
+        if(researchGrants.empty())
+        {
+            throw PaymentException("Number of research grants must be positive");
+        }
+    }
+    void displayInfo() override
+    {
+        Professor::displayInfo();
+        cout<<"Research Grants: "<<researchGrants<<endl;
+    }
+    
+    float calculatePayment() override
+    {
+        return 200000.0 + (static_cast<float>(stoi(researchGrants)) * 0.05); 
+    }
+};
+
+class University
+{
+    private:
+    vector<Department*> departments;
+    
+    public:
+    void addDepartment(Department* dept)
+    {
+        departments.push_back(dept);
+    }
+    void listAllDepartments()
+    {
+        cout<<"List of Departments:"<<endl;
+        for(auto dept:departments)
+        {
+            cout<<"Department: "<<dept->getName()<<endl;
+            dept->list_of_Professors();
+            cout<<endl;
+        }
+    }
+};
+
+class Schedule
+{
+    private:
+    struct TimeSlots
+    {
+        string day;
+        string startTime;
+        string endTime;
+        Course *course;
+        Classroom *classroom;
+    };
+    vector<TimeSlots> schedule;
+    public:
+    void addTimeSlot(string day, string start, string end, Course *course, Classroom *classroom)
+    {
+        TimeSlots ts;
+        ts.day=day;
+        ts.startTime=start;
+        ts.endTime=end;
+        ts.course=course;
+        ts.classroom=classroom;
+        schedule.push_back(ts);
+    }
+    void displaySchedule()
+    {
+        cout<<"Universty Course Schedule: "<<endl;
+        for(const auto ts:schedule)
+        {
+            cout<<"Day: "<<ts.day<<endl;
+            cout<<"Time: "<<ts.startTime<<" - "<<ts.endTime<<endl;
+            cout<<"Course: "<<ts.course->getTitle()<<endl;
+            cout<<"Classroom: "<<ts.classroom->getRoomnumber()<<endl;
+            cout<<endl;
+        }
+    }
+};
+
+
+
+void logException(const string& errorMessage) {
+    ofstream logFile("error_log.txt", ios::app); // open in append mode
+    if (logFile.is_open()) {
+        time_t now = time(0);
+        //tm ltm;
+        tm ltm = *localtime(&now);
+        logFile << "[" << 1900 + ltm.tm_year << "-"
+                << setw(2) << setfill('0') << 1 + ltm.tm_mon << "-"
+                << setw(2) << setfill('0') << ltm.tm_mday << " "
+                << setw(2) << setfill('0') << ltm.tm_hour << ":"
+                << setw(2) << setfill('0') << ltm.tm_min << ":"
+                << setw(2) << setfill('0') << ltm.tm_sec << "] "
+                << errorMessage << endl;
+        logFile.close();
+    } else {
+        cerr << "Unable to open log file." << endl;
+    }
+}
+
+int main() {
+    try {
+        // Create some professors
+        Professor* prof1 = new AssistantProfessor("Suman", 40, "P123", "1234567890", "Computer Science", "AI", "2010-05-01", "5");
+        Professor* prof2 = new AssociateProfessor("Rita", 45, "P124", "2345678901", "Mathematics", "ML", "2008-08-15", "10");
+        Professor* prof3 = new FullProfessor("Meenakshi", 50, "P125", "3456789012", "Physics", "DS", "2005-11-23", "3");
+
+        // Create a classroom
+        Classroom* room101 = new Classroom("101", 50, "Main Building");
+
+        // Create courses
+        Course* course1 = new Course("CS101", "Introduction to AI", 3, "Introduction to AI Concepts", prof1, room101, 40, "2025-06-01");
+        Course* course2 = new Course("MATH202", "Advanced Algebra", 4, "Study of Algebraic Structures", prof2, room101, 30, "2025-05-15");
+        Course* course3 = new Course("PHYS301", "Quantum Mechanics", 3, "Study of Quantum Mechanics", prof3, room101, 35, "2025-05-25");
+
+        // Create students
+        Student* student1 = new UndergraduateStudent("Reyansh", 20, "S123", "5551234567", "2024-09-01", "Computer Science", 3.8, "CS", "Math", "2028-06-01");
+        Student* student2 = new GraduateStudent("Sanjay", 24, "S124", "5552345678", "2023-09-01", "Physics", 3.9, "Quantum Computing", prof3, "P125", "Quantum Computing Research");
+
+        // Create a department
+        Department* csDept = new Department("Computer Science", "Building A", 1000000.0);
+        csDept->addProfessor(prof1);
+        csDept->addProfessor(prof2);
+
+        // Create enrollment manager
+        EnrollmentManager enrollmentManager;
+
+        // Test enrolling students in courses
+        vector<string> completedCourses;
+        completedCourses.push_back("MATH101");
+        completedCourses.push_back("CS100");
+        try {
+            enrollmentManager.enrollStudent("S123", "CS101", *course1, completedCourses); // John Doe
+            enrollmentManager.enrollStudent("S124", "MATH202", *course2, completedCourses); // Jane Smith
+        } catch (const UniversitySystemException& e) {
+            cout << "Error enrolling student: " << e.what() << endl;
+        }
+
+        // List enrolled courses for students
+        try {
+            cout << "\nListing enrolled courses for student 1 (Reyansh):" << endl;
+            dynamic_cast<StudentWithCourses*>(student1)->listOfCourses();
+
+            cout << "\nListing enrolled courses for student 2 (Sanjay):" << endl;
+            dynamic_cast<StudentWithCourses*>(student2)->listOfCourses();
+        } catch (const exception& e) {
+            cout << "Error listing courses: " << e.what() << endl;
+        }
+
+        // Calculate payments for students and professors
+        try {
+            cout << "\nPayment details:" << endl;
+            cout << "Student 1 (Reyansh) Payment: Rs " << student1->calculatePayment() << endl;
+            cout << "Student 2 (Sanjay) Payment: Rs " << student2->calculatePayment() << endl;
+            cout << "Professor 1 (Suman) Payment: Rs " << prof1->calculatePayment() << endl;
+            cout << "Professor 2 (Rita) Payment: Rs " << prof2->calculatePayment() << endl;
+            cout << "Professor 3 (Meenakshi) Payment: Rs " << prof3->calculatePayment() << endl;
+        } catch (const exception& e) {
+            cout << "Error calculating payments: " << e.what() << endl;
+        }
+
+        // Test grade book
+        try {
+            GradeBook gradebook("CS101", "P123");
+            gradebook.addGrade(prof1, "S123", 88.0); // John Doe's grade
+            gradebook.addGrade(prof1, "S124", 92.0); // Jane Smith's grade
+            gradebook.displayGrades();
+            gradebook.finalizeGrades();
+        } catch (const UniversitySystemException& e) {
+            cout << "Error handling grade book: " << e.what() << endl;
+        }
+
+        // Clean up dynamically allocated memory
+        delete prof1;
+        delete prof2;
+        delete prof3;
+        delete room101;
+        delete course1;
+        delete course2;
+        delete course3;
+        delete student1;
+        delete student2;
+        delete csDept;
+    } catch (const exception& e) {
+        cout << "Unexpected error occurred: " << e.what() << endl;
+    }
+
+    return 0;
+}
