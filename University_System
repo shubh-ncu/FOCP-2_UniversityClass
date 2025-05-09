@@ -1,0 +1,181 @@
+#include<iostream>
+#include<vector>
+#include<string>
+#include<exception>
+#include<map>
+#include<iomanip>
+#include<sstream>
+#include<fstream>
+#include "Assignment_2_3_4.cpp" // Include the existing code
+
+using namespace std;
+
+class UniversitySystem {
+private:
+    vector<Department*> departments;
+    vector<Student*> students;
+    vector<Professor*> professors;
+    vector<Course*> courses;
+    EnrollmentManager enrollmentManager;
+
+public:
+    void createNewSemester() {
+        cout << "New semester created successfully!" << endl;
+    }
+
+    void addDepartment(Department* dept) {
+        departments.push_back(dept);
+        cout << "Department added: " << dept->getName() << endl;
+    }
+
+    void addStudent(Student* student) {
+        students.push_back(student);
+        cout << "Student added: " << student->getName() << endl;
+    }
+
+    void addProfessor(Professor* professor) {
+        professors.push_back(professor);
+        cout << "Professor added: " << professor->getName() << endl;
+    }
+
+    void addCourse(Course* course) {
+        courses.push_back(course);
+        cout << "Course added: " << course->getTitle() << endl;
+    }
+
+    void enrollStudentInCourse(string studentID, string courseCode, vector<string> completedCourses) {
+        try {
+            Course* course = nullptr;
+            for (auto c : courses) {
+                if (c->getCode() == courseCode) {
+                    course = c;
+                    break;
+                }
+            }
+            if (!course) throw EnrollmentException("Course not found");
+
+            Student* student = nullptr;
+            for (auto s : students) {
+                if (s->getID() == studentID) {
+                    student = s;
+                    break;
+                }
+            }
+            if (!student) throw EnrollmentException("Student not found");
+
+            enrollmentManager.enrollStudent(studentID, courseCode, *course, completedCourses);
+            cout << "Student " << student->getName() << " enrolled in course " << course->getTitle() << endl;
+        } catch (UniversitySystemException& e) {
+            cerr << "Error: " << e.what() << endl;
+        }
+    }
+
+    void assignProfessorToCourse(string professorID, string courseCode) {
+        try {
+            Course* course = nullptr;
+            for (auto c : courses) {
+                if (c->getCode() == courseCode) {
+                    course = c;
+                    break;
+                }
+            }
+            if (!course) throw EnrollmentException("Course not found");
+
+            Professor* professor = nullptr;
+            for (auto p : professors) {
+                if (p->getID() == professorID) {
+                    professor = p;
+                    break;
+                }
+            }
+            if (!professor) throw EnrollmentException("Professor not found");
+
+            course->setInstructor(professor);
+            cout << "Professor " << professor->getName() << " assigned to course " << course->getTitle() << endl;
+        } catch (UniversitySystemException& e) {
+            cerr << "Error: " << e.what() << endl;
+        }
+    }
+
+    void enterGrade(string professorID, string studentID, string courseCode, float grade) {
+        try {
+            Course* course = nullptr;
+            for (auto c : courses) {
+                if (c->getCode() == courseCode) {
+                    course = c;
+                    break;
+                }
+            }
+            if (!course) throw GradeException("Course not found");
+            
+            GradeBook gradeBook(courseCode, professorID);
+            gradeBook.addGrade(course->getInstructor(), studentID, grade);
+            cout << "Grade entered successfully for student " << studentID << " in course " << courseCode << endl;
+        } catch (UniversitySystemException& e) {
+            cerr << "Error: " << e.what() << endl;
+        }
+    }
+
+    void generateReports() {
+        cout << "Generating reports..." << endl;
+        cout << "Departments:" << endl;
+        for (auto dept : departments) {
+            cout << "- " << dept->getName() << endl;
+        }
+        cout << "Courses:" << endl;
+        for (auto course : courses) {
+            cout << "- " << course->getTitle() << " (" << course->getCode() << ")" << endl;
+        }
+        cout << "Students:" << endl;
+        for (auto student : students) {
+            cout << "- " << student->getName() << " (" << student->getID() << ")" << endl;
+        }
+        cout << "Professors:" << endl;
+        for (auto professor : professors) {
+            cout << "- " << professor->getName() << " (" << professor->getID() << ")" << endl;
+        }
+    }
+};
+
+// Menu-driven test program
+int main() {
+    UniversitySystem system;
+
+    try {
+        // Create departments
+        Department* csDept = new Department("Computer Science", "Building A", 500000);
+        system.addDepartment(csDept);
+
+        // Add professors
+        Professor* prof1 = new Professor("Suman", 45, "P001", "1234567890", "CS", "AI", "2015-01-01");
+        system.addProfessor(prof1);
+
+        // Add students
+        Student* student1 = new Student("Reyansh", 20, "S001", "9876543210", "2023-01-01", "CS", 3.8);
+        system.addStudent(student1);
+
+        // Add courses
+        Classroom* room1 = new Classroom("101", 30, "Building A");
+        Course* course1 = new Course("CS101", "Intro to AI", 3, "Basics of AI", prof1, room1, 30, "2025-06-01");
+        system.addCourse(course1);
+
+        // Enroll student in course
+        system.enrollStudentInCourse("S001", "CS101", {});
+
+        // Assign professor to course
+        system.assignProfessorToCourse("P001", "CS101");
+
+        // Enter grades
+        system.enterGrade("P001", "S001", "CS101", 85.0);
+
+        // Generate reports
+        system.generateReports();
+
+    } catch (UniversitySystemException& e) {
+        cerr << "Error: " << e.what() << endl;
+    } catch (exception& e) {
+        cerr << "Standard Error: " << e.what() << endl;
+    }
+
+    return 0;
+}
